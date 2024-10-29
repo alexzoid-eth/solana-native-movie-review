@@ -12,7 +12,7 @@ import json
 import os
 
 # Program ID for the movie review program
-PROGRAM_ID = Pubkey.from_string("HG6JPvSRuTeQDqrXKtgyYTQADTkCqtEDTJDHfidy2W9L")
+PROGRAM_ID = Pubkey.from_string("9t4MNpDCv1PUNKD5P4b8ymfXk539TjfxpchJiHUbp6Ki")
 
 # Define the instruction layout using borsh_construct
 REVIEW_INSTRUCTION_LAYOUT = CStruct(
@@ -39,8 +39,7 @@ async def add_movie_review():
     client = AsyncClient("https://api.devnet.solana.com")
     
     # Load private key from JSON file
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    keypair_path = os.path.join(os.path.dirname(script_dir), "wallet-keypair.json")
+    keypair_path = os.path.join(os.path.dirname(__file__), "../../wallet-keypair.json")
     
     try:
         with open(keypair_path, 'r') as f:
@@ -54,7 +53,7 @@ async def add_movie_review():
         return
     
     # Movie review details - matching TypeScript example
-    title = "movie2"
+    title = "movie3"
     rating = 5
     description = "A great movie"
     
