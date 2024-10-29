@@ -1,6 +1,6 @@
 use crate::error::ReviewError;
 use crate::instruction::MovieInstruction;
-use crate::state::{MovieAccountState, MovieComment, MovieCommentCounter};
+use crate::state::{MovieAccountState};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::program_pack::IsInitialized;
 use solana_program::{
@@ -27,12 +27,6 @@ pub fn process_instruction(
             rating,
             description,
         } => add_movie_review(program_id, accounts, title, rating, description),
-        MovieInstruction::UpdateMovieReview {
-            title,
-            rating,
-            description,
-        } => update_movie_review(program_id, accounts, title, rating, description),
-        MovieInstruction::AddComment { comment } => add_comment(program_id, accounts, comment),
     }
 }
 
@@ -128,11 +122,10 @@ pub fn add_movie_review(
 
     // Create new account data
     let account_data = MovieAccountState {
-        discriminator: MovieAccountState::DISCRIMINATOR.to_string(),
         is_initialized: true,
         reviewer: *initializer.key,
-        title,
         rating,
+        title,
         description,
     };
 
@@ -224,79 +217,6 @@ pub fn update_movie_review(
     msg!("Serializing account");
     account_data.serialize(&mut &mut pda_account.data.borrow_mut()[..])?;
     msg!("State account serialized");
-
-    Ok(())
-}
-
-pub fn add_comment(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    comment: String,
-) -> ProgramResult {
-    msg!("Adding Comment: {}", comment);
-
-    let account_info_iter = &mut accounts.iter();
-    let commenter = next_account_info(account_info_iter)?;
-    let pda_review = next_account_info(account_info_iter)?;
-    let pda_counter = next_account_info(account_info_iter)?;
-    let pda_comment = next_account_info(account_info_iter)?;
-    let system_program = next_account_info(account_info_iter)?;
-
-    let mut counter_data = MovieCommentCounter::try_from_slice(&pda_counter.data.borrow())?;
-    let account_len = MovieComment::get_account_size(comment.clone());
-
-    let rent = Rent::get()?;
-    let rent_lamports = rent.minimum_balance(account_len);
-
-    let (pda, bump_seed) = Pubkey::find_program_address(
-        &[
-            pda_review.key.as_ref(),
-            counter_data.counter.to_be_bytes().as_ref(),
-        ],
-        program_id,
-    );
-    if pda != *pda_comment.key {
-        msg!("Invalid seeds for PDA");
-        return Err(ReviewError::InvalidPDA.into());
-    }
-
-    invoke_signed(
-        &system_instruction::create_account(
-            commenter.key,
-            pda_comment.key,
-            rent_lamports,
-            account_len.try_into().unwrap(),
-            program_id,
-        ),
-        &[
-            commenter.clone(),
-            pda_comment.clone(),
-            system_program.clone(),
-        ],
-        &[&[
-            pda_review.key.as_ref(),
-            counter_data.counter.to_be_bytes().as_ref(),
-            &[bump_seed],
-        ]],
-    )?;
-    msg!("Created Comment Account");
-
-    let mut comment_data = MovieComment::try_from_slice(&pda_comment.data.borrow())?;
-    if comment_data.is_initialized() {
-        msg!("Account already initialized");
-        return Err(ProgramError::AccountAlreadyInitialized);
-    }
-
-    comment_data.discriminator = MovieComment::DISCRIMINATOR.to_string();
-    comment_data.review = *pda_review.key;
-    comment_data.commenter = *commenter.key;
-    comment_data.comment = comment;
-    comment_data.is_initialized = true;
-    comment_data.serialize(&mut &mut pda_comment.data.borrow_mut()[..])?;
-
-    msg!("Comment Count: {}", counter_data.counter);
-    counter_data.counter += 1;
-    counter_data.serialize(&mut &mut pda_counter.data.borrow_mut()[..])?;
 
     Ok(())
 }

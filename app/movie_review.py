@@ -53,7 +53,7 @@ async def add_movie_review():
         return
     
     # Movie review details - matching TypeScript example
-    title = "movie3"
+    title = "movie9"
     rating = 5
     description = "A great movie"
     
