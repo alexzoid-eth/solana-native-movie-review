@@ -1,3 +1,5 @@
+Example from Solana [Native Onchain Development](https://solana.com/developers/courses/native-onchain-development) course.
+
 ## Program
 
 ```bash
@@ -9,7 +11,6 @@ solana program deploy target/deploy/pda_local.so
 ## App
 
 - set `PROGRAM_ID` in `movie_review.py`
-- store solana private key `wallet-keypair.json` in directory outside root dir
 
 ```bash
 cd app
